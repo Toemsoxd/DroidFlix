@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetroFlix 2011</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #141414; color: #fff; font-family: 'Helvetica', Arial, sans-serif; }
+        .netflix-red { background-color: #E50914; }
+        .row-title { font-weight: bold; margin: 20px 0 10px 20px; font-size: 1.2rem; }
+        .movie-cover { transition: transform 0.2s; cursor: pointer; }
+        .movie-cover:hover { transform: scale(1.05); border: 2px solid white; }
+        .modal-overlay { background: rgba(0,0,0,0.85); }
+        .modal-content { background: #1f1f1f; border: 1px solid #333; }
+    </style>
+</head>
+<body>
+
+    <header class="netflix-red p-3 flex justify-center items-center text-white">
+        <img src="net.png" alt="Netflix" class="h-8">
+    </header>
+
+    <main id="app" class="p-6">
+        <h2 class="row-title">Top Picks for You</h2>
+        <div id="movie-list" class="flex gap-4 overflow-x-auto pb-4">
+            <p class="text-gray-500 italic p-10">Loading library...</p>
+        </div>
+    </main>
+
+    <div id="player-modal" class="fixed inset-0 hidden z-50 flex items-center justify-center p-4 modal-overlay">
+        <div class="modal-content w-full max-w-2xl shadow-2xl relative">
+            <button onclick="closePlayer()" class="absolute top-2 right-2 text-white bg-black p-2 rounded-full">X</button>
+            <div class="p-6 flex flex-col md:flex-row gap-6">
+                <img id="modal-img" src="" class="w-40 h-56 object-cover border border-gray-700">
+                <div class="flex flex-col">
+                    <h2 id="modal-title" class="text-2xl font-bold mb-2">Movie Title</h2>
+                    <p id="modal-info" class="text-sm text-gray-400 mb-4 italic"></p>
+                    <button id="play-btn" class="netflix-red w-32 py-2 text-white font-bold">PLAY</button>
+                </div>
+            </div>
+            <video id="video-player" controls class="w-full hidden"></video>
+        </div>
+    </div>
+
+    <script>
+        const GITHUB_USER = "tu-usuario";
+        const REPO = "tu-repo";
+        const BASE_URL = `https://api.github.com/repos/${GITHUB_USER}/${REPO}/contents/movies`;
+
+        async function fetchMovies() {
+            try {
+                const response = await fetch(BASE_URL);
+                const folders = await response.json();
+                const list = document.getElementById('movie-list');
+                list.innerHTML = '';
+
+                for (const folder of folders) {
+                    if (folder.type === "dir") {
+                        const contents = await fetch(folder.url).then(r => r.json());
+                        const movie = {
+                            name: folder.name.replace(/-/g, ' '),
+                            img: contents.find(f => f.name.includes('.bmp'))?.download_url || 'https://placehold.co/150x220/333/fff?text=No+Cover',
+                            vid: contents.find(f => f.name.includes('.mp4') || f.name.includes('.avi'))?.download_url,
+                            txt: contents.find(f => f.name.includes('.txt'))?.download_url
+                        };
+                        
+                        const div = document.createElement('div');
+                        div.className = 'movie-cover shrink-0 w-32 h-48';
+                        div.innerHTML = `<img src="${movie.img}" class="w-full h-full object-cover">`;
+                        div.onclick = () => openModal(movie);
+                        list.appendChild(div);
+                    }
+                }
+            } catch (e) {
+                document.getElementById('movie-list').innerHTML = "Error connecting to GitHub.";
+            }
+        }
+
+        async function openModal(movie) {
+            const modal = document.getElementById('player-modal');
+            document.getElementById('modal-title').innerText = movie.name;
+            document.getElementById('modal-img').src = movie.img;
+            
+            if(movie.txt) {
+                const text = await fetch(movie.txt).then(r => r.text());
+                document.getElementById('modal-info').innerText = text;
+            }
+
+            document.getElementById('play-btn').onclick = () => {
+                document.getElementById('video-player').classList.remove('hidden');
+                document.getElementById('video-player').src = movie.vid;
+                document.getElementById('video-player').play();
+            };
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closePlayer() {
+            const player = document.getElementById('video-player');
+            player.pause();
+            player.classList.add('hidden');
+            document.getElementById('player-modal').classList.add('hidden');
+        }
+
+        window.onload = fetchMovies;
+    </script>
+</body>
+</html>
