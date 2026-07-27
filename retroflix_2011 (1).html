@@ -60,9 +60,9 @@
                         const contents = await fetch(folder.url).then(r => r.json());
                         const movie = {
                             name: folder.name.replace(/-/g, ' '),
-                            img: contents.find(f => f.name.includes('.bmp'))?.download_url || 'https://placehold.co/150x220/333/fff?text=No+Cover',
-                            vid: contents.find(f => f.name.includes('.mp4') || f.name.includes('.avi'))?.download_url,
-                            txt: contents.find(f => f.name.includes('.txt'))?.download_url
+                            img: contents.find(f => f.name.endsWith('.png'))?.download_url || 'https://placehold.co/150x220/333/fff?text=No+Cover',
+                            vid: contents.find(f => f.name.endsWith('.mp4'))?.download_url,
+                            txt: contents.find(f => f.name.endsWith('.txt'))?.download_url
                         };
                         
                         const div = document.createElement('div');
